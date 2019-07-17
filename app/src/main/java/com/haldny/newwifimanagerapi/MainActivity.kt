@@ -1,9 +1,12 @@
 package com.haldny.newwifimanagerapi
 
+import android.Manifest
 import android.app.job.JobScheduler
 import android.content.Context
+import android.content.pm.PackageManager
 import android.net.wifi.WifiConfiguration
 import android.net.wifi.WifiManager
+import android.net.wifi.WifiNetworkSuggestion
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
@@ -115,13 +118,16 @@ class MainActivity : AppCompatActivity() {
 
         val wifiManager = getSystemService(Context.WIFI_SERVICE) as WifiManager
 
-        val wifiConfig = WifiConfiguration()
-        wifiConfig.SSID = quoteString(ssidText)
-        wifiConfig.preSharedKey = quoteString(passwordText)
+        Log.d("HSS", "How many network can I create? ${wifiManager.maxNumberOfNetworkSuggestionsPerApp}")
 
-        Log.d("HSS", "Add network: ${wifiConfig.SSID}")
-        val result = wifiManager.addNetwork(wifiConfig)
-        Log.d("HSS", "Network was added: ${result != -1}")
+        val networkSuggestion = WifiNetworkSuggestion.Builder()
+            .setSsid(quoteString(ssidText))
+            .setWpa2Passphrase(quoteString(passwordText))
+            .build()
+
+        Log.d("HSS", "Add network: $ssidText")
+        val result = wifiManager.addNetworkSuggestions(mutableListOf(networkSuggestion))
+        Log.d("HSS", "Network was added: ${result}")
 
         viewAdapter.updateNetworks(getNetworks())
         viewAdapter.notifyDataSetChanged()
@@ -160,12 +166,41 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getNetworks(): MutableList<Network> {
-        val wifiManager = getSystemService(Context.WIFI_SERVICE) as WifiManager
-        val listWifiConfigs = wifiManager.configuredNetworks
 
-        return listWifiConfigs.stream()
-            .map { wifiConfig -> Network(wifiConfig.networkId, wifiConfig.SSID) }
-            .collect(Collectors.toList())
+        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+            == PackageManager.PERMISSION_GRANTED) {
+            val wifiManager = getSystemService(Context.WIFI_SERVICE) as WifiManager
+            val listWifiConfigs = wifiManager.configuredNetworks
+
+            Log.d("HSS", "List of wifi $listWifiConfigs")
+
+            return listWifiConfigs.stream()
+                .map { wifiConfig -> Network(wifiConfig.networkId, wifiConfig.SSID) }
+                .collect(Collectors.toList())
+        } else {
+            if (shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) {
+
+            } else {
+                requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 302)
+            }
+        }
+
+        return mutableListOf()
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int,
+        permissions: Array<String>, grantResults: IntArray) {
+        when (requestCode) {
+            302 -> {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.isNotEmpty()
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    getNetworks()
+                } // functionality that depends on this permission.
+
+                return
+            }
+        }
     }
 
     private fun quoteString(text: String) = String.format("\"%s\"", text)

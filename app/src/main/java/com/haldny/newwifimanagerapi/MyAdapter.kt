@@ -2,6 +2,7 @@ package com.haldny.newwifimanagerapi
 
 import android.content.Context
 import android.net.wifi.WifiManager
+import android.net.wifi.WifiNetworkSuggestion
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -53,7 +54,15 @@ class MyAdapter(private var networks: MutableList<Network>,
                 Log.d("HSS", "Remove Network: $network")
 
                 val wifiManager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
-                wifiManager.removeNetwork(network.id)
+
+                val networkSuggestion = WifiNetworkSuggestion.Builder()
+                    .setSsid(quoteString(network.ssid.toString()))
+                    .build()
+
+                val result = wifiManager.removeNetworkSuggestions(mutableListOf(networkSuggestion))
+
+                Log.d("HSS", "Removed network status: $result")
+
                 networks.remove(network)
                 notifyItemRemoved(position)
 
@@ -69,6 +78,8 @@ class MyAdapter(private var networks: MutableList<Network>,
                 Log.d("HSS", "Network was enabled: $result")
             }
         }
+
+        private fun quoteString(text: String) = String.format("\"%s\"", text)
 
     }
 
