@@ -51,7 +51,8 @@ class MainActivity : AppCompatActivity() {
 
         disconnect.setOnClickListener {
             val wifiManager = getSystemService(Context.WIFI_SERVICE) as WifiManager
-            wifiManager.disconnect()
+            wifiManager.removeNetworkSuggestions(mutableListOf())
+            Log.d("HSS", "All networks suggestions were removed")
         }
 
         recycle_view.apply {
@@ -121,8 +122,8 @@ class MainActivity : AppCompatActivity() {
         Log.d("HSS", "How many network can I create? ${wifiManager.maxNumberOfNetworkSuggestionsPerApp}")
 
         val networkSuggestion = WifiNetworkSuggestion.Builder()
-            .setSsid(quoteString(ssidText))
-            .setWpa2Passphrase(quoteString(passwordText))
+            .setSsid(ssidText)
+            .setWpa2Passphrase(passwordText)
             .build()
 
         Log.d("HSS", "Add network: $ssidText")
